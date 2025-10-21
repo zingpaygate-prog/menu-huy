@@ -7,6 +7,7 @@ import { OrderSummary } from './components/OrderSummary';
 import { GeminiSuggester } from './components/GeminiSuggester';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
+import { MenuExporter } from './components/MenuExporter';
 
 const App: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -154,8 +155,9 @@ const App: React.FC = () => {
                 />
             </div>
 
-            <div className="text-center mt-4">
+            <div className="text-center mt-4 flex justify-center items-center gap-4">
                <FileUploader onFileUploaded={handleFileUploaded} onError={setError} isReupload={true} />
+               <MenuExporter menuItems={menuItems} />
             </div>
           </>
         )}

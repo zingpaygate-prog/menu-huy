@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem } from '../types';
+import { OrderImageExporter } from './OrderImageExporter';
 
 declare const XLSX: any;
 
@@ -186,7 +187,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                     <span className="text-indigo-600 dark:text-indigo-400">{formattedTotalPrice}</span>
                 </div>
                  {selectedItems.length > 0 && (
-                    <div className="mt-4">
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button
                             onClick={handleExport}
                             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center shadow-md"
@@ -196,6 +197,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                             </svg>
                             Xuất sang Excel
                         </button>
+                        <OrderImageExporter selectedItems={selectedItems} totalPrice={totalPrice} />
                     </div>
                 )}
             </div>
