@@ -1,6 +1,5 @@
 import React from 'react';
 import { MenuItem } from '../types';
-import { backgroundImage } from '../assets/backgroundImage';
 
 interface OrderImageExporterProps {
   selectedItems: MenuItem[];
@@ -21,92 +20,77 @@ export const OrderImageExporter: React.FC<OrderImageExporterProps> = ({ selected
       return;
     }
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = backgroundImage;
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
+    // Set a standard size (like A4 ratio)
+    canvas.width = 2480;
+    canvas.height = 3508;
 
-      // 1. Draw background image
-      ctx.drawImage(img, 0, 0);
+    // 1. Fill background with white
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 2. Setup drawing variables
-      const margin = 200;
-      let currentY = 250;
-      
-      const titleFont = 'bold 64px Arial';
-      const itemFont = '42px Arial';
-      const totalFont = 'bold 48px Arial';
-      const footerFont = '36px Arial';
-      const itemLineHeight = 65;
-      const titleSpacing = 100;
+    // 2. Setup drawing variables
+    const margin = 200;
+    let currentY = 250;
+    
+    const titleFont = 'bold 64px Arial';
+    const itemFont = '42px Arial';
+    const totalFont = 'bold 48px Arial';
+    const itemLineHeight = 65;
+    const titleSpacing = 100;
 
-      ctx.fillStyle = '#4A4A4A';
-      ctx.textAlign = 'center';
+    ctx.fillStyle = '#4A4A4A';
+    ctx.textAlign = 'center';
 
-      // 3. Draw Title
-      ctx.font = titleFont;
-      ctx.fillText("Chi Tiết Đơn Hàng", canvas.width / 2, currentY);
-      currentY += titleSpacing;
+    // 3. Draw Title
+    ctx.font = titleFont;
+    ctx.fillText("Chi Tiết Đơn Hàng", canvas.width / 2, currentY);
+    currentY += titleSpacing;
 
-      // 4. Draw selected items
-      ctx.font = itemFont;
-      for (const item of selectedItems) {
-        const priceText = `${new Intl.NumberFormat('vi-VN').format(item.price)}đ`;
-        const itemName = item.name;
-        
-        ctx.textAlign = 'left';
-        ctx.fillText(itemName, margin, currentY);
-        
-        ctx.textAlign = 'right';
-        ctx.fillText(priceText, canvas.width - margin, currentY);
-        
-        currentY += itemLineHeight;
-      }
-      
-      currentY += itemLineHeight / 2;
-      
-      // 5. Draw separator
-      ctx.beginPath();
-      ctx.moveTo(margin, currentY);
-      ctx.lineTo(canvas.width - margin, currentY);
-      ctx.strokeStyle = '#CCCCCC';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      currentY += itemLineHeight;
-
-      // 6. Draw Total
-      ctx.font = totalFont;
-      const totalText = "Tổng cộng:";
-      const formattedTotal = `${new Intl.NumberFormat('vi-VN').format(totalPrice)}đ`;
+    // 4. Draw selected items
+    ctx.font = itemFont;
+    for (const item of selectedItems) {
+      const priceText = `${new Intl.NumberFormat('vi-VN').format(item.price)}đ`;
+      const itemName = item.name;
       
       ctx.textAlign = 'left';
-      ctx.fillText(totalText, margin, currentY);
+      ctx.fillText(itemName, margin, currentY);
       
       ctx.textAlign = 'right';
-      ctx.fillText(formattedTotal, canvas.width - margin, currentY);
+      ctx.fillText(priceText, canvas.width - margin, currentY);
       
-      // 7. Draw footer text (re-using from MenuExporter)
-      ctx.font = footerFont;
-      ctx.fillStyle = '#6B6B6B';
-      ctx.textAlign = 'center';
-      const footerY = canvas.height - 680;
-      ctx.fillText('*Giá đã bao gồm VAT và phí dịch vụ', canvas.width / 2, footerY);
-      ctx.fillText('Giá chưa bao gồm set up bàn ghế, trang trí', canvas.width / 2, footerY + 50);
-
-      // 8. Trigger download
-      const link = document.createElement('a');
-      link.download = 'Don_hang.png';
-      link.href = canvas.toDataURL('image/png');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-    img.onerror = () => {
-        alert("Không thể tải ảnh nền.");
+      currentY += itemLineHeight;
     }
+    
+    currentY += itemLineHeight / 2;
+    
+    // 5. Draw separator
+    ctx.beginPath();
+    ctx.moveTo(margin, currentY);
+    ctx.lineTo(canvas.width - margin, currentY);
+    ctx.strokeStyle = '#CCCCCC';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    currentY += itemLineHeight;
+
+    // 6. Draw Total
+    ctx.font = totalFont;
+    const totalText = "Tổng cộng:";
+    const formattedTotal = `${new Intl.NumberFormat('vi-VN').format(totalPrice)}đ`;
+    
+    ctx.textAlign = 'left';
+    ctx.fillText(totalText, margin, currentY);
+    
+    ctx.textAlign = 'right';
+    ctx.fillText(formattedTotal, canvas.width - margin, currentY);
+    
+    // 7. Trigger download
+    const link = document.createElement('a');
+    link.download = 'Don_hang.png';
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
