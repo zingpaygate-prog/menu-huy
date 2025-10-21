@@ -7,10 +7,48 @@ interface GeminiSuggesterProps {
   onSuggestion: (suggestedItems: MenuItem[]) => void;
 }
 
+const SuggestionOption: React.FC<{
+  option: string[];
+  menu: MenuItem[];
+  onSelect: (items: MenuItem[]) => void;
+  index: number;
+}> = ({ option, menu, onSelect, index }) => {
+  const [totalPrice, items] = React.useMemo(() => {
+    const validItems = option
+      .map(name => menu.find(item => item.name.toLowerCase() === name.toLowerCase()))
+      .filter((item): item is MenuItem => !!item);
+    const price = validItems.reduce((sum, item) => sum + item.price, 0);
+    return [price, validItems];
+  }, [option, menu]);
+
+  const formattedTotalPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPrice);
+
+  return (
+    <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
+      <h4 className="font-bold text-lg mb-2 text-indigo-600 dark:text-indigo-400">Lựa chọn {index + 1}</h4>
+      <ul className="space-y-1 mb-3 list-disc list-inside text-gray-700 dark:text-gray-300">
+        {items.map(item => <li key={item.id}>{item.name}</li>)}
+        {items.length === 0 && <li className="text-gray-500 list-none">Không có món nào hợp lệ trong lựa chọn này.</li>}
+      </ul>
+      <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+          <p className="font-semibold">Tổng: <span className="font-mono">{formattedTotalPrice}</span></p>
+          <button
+            onClick={() => onSelect(items)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors"
+            >
+            Chọn
+          </button>
+      </div>
+    </div>
+  )
+}
+
+
 export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSuggestion }) => {
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[][] | null>(null);
 
   const handleSuggest = async () => {
     if (!prompt.trim()) {
@@ -19,15 +57,13 @@ export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSugges
     }
     setIsLoading(true);
     setError(null);
+    setSuggestions(null);
     try {
-      const suggestedNames = await suggestMeal(menu, prompt);
-      if (suggestedNames.length === 0) {
+      const suggestedOptions = await suggestMeal(menu, prompt);
+      if (suggestedOptions.length === 0) {
         setError("AI không thể tìm thấy gợi ý phù hợp. Vui lòng thử một yêu cầu khác.");
       } else {
-        const suggestedItems = suggestedNames
-          .map(name => menu.find(item => item.name.toLowerCase() === name.toLowerCase()))
-          .filter((item): item is MenuItem => !!item);
-        onSuggestion(suggestedItems);
+        setSuggestions(suggestedOptions);
       }
     } catch (e) {
       if (e instanceof Error) {
@@ -40,6 +76,11 @@ export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSugges
     }
   };
   
+  const handleSelectOption = (items: MenuItem[]) => {
+    onSuggestion(items);
+    setSuggestions(null);
+  }
+
   const hasApiKey = !!process.env.API_KEY;
 
   if (!hasApiKey) {
@@ -79,10 +120,26 @@ export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSugges
               Đang lấy gợi ý...
             </>
           ) : (
-            '✨ Nhận Gợi ý từ AI'
+            '✨ Nhận 3 Gợi ý từ AI'
           )}
         </button>
         {error && <p className="text-sm text-red-600 dark:text-red-400 mt-2">{error}</p>}
+
+        {!isLoading && suggestions && suggestions.length > 0 && (
+            <div className="mt-6 space-y-4">
+                 <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Đây là một vài lựa chọn:</h3>
+                {suggestions.map((option, index) => (
+                    <SuggestionOption
+                        key={index}
+                        option={option}
+                        menu={menu}
+                        onSelect={handleSelectOption}
+                        index={index}
+                    />
+                ))}
+            </div>
+        )}
+
       </div>
     </div>
   );
