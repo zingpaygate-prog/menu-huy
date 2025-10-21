@@ -1,0 +1,5 @@
+{
+  "name": "AI Menu Planner",
+  "description": "Upload your restaurant's menu from an Excel file, select dishes, and instantly see the total cost. Use the power of AI to get personalized meal suggestions based on your preferences.",
+  "requestFramePermissions": []
+}
