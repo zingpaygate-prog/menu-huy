@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MenuItem } from '../types';
 import { suggestMeal } from '../services/geminiService';
 
+declare const XLSX: any;
+
 interface GeminiSuggesterProps {
   menu: MenuItem[];
   onSuggestion: (suggestedItems: MenuItem[]) => void;
@@ -22,6 +24,44 @@ const SuggestionOption: React.FC<{
   }, [option, menu]);
 
   const formattedTotalPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(totalPrice);
+  
+  const handleExport = () => {
+    if (items.length === 0 || typeof XLSX === 'undefined') return;
+
+    const dataToExport = items.map(item => ({
+      'Tên Món': item.name,
+      'Loại': item.category,
+      'Đơn giá': item.price,
+    }));
+
+    dataToExport.push({
+      'Tên Món': '',
+      'Loại': 'Tổng cộng',
+      'Đơn giá': totalPrice,
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+
+    worksheet['!cols'] = [
+      { wch: 40 }, // Tên Món
+      { wch: 20 }, // Loại
+      { wch: 15 }, // Đơn giá
+    ];
+
+    const priceCol = 'C';
+    for (let i = 2; i <= items.length + 2; i++) {
+        const cellAddress = `${priceCol}${i}`;
+        if (worksheet[cellAddress] && worksheet[cellAddress].v !== undefined) {
+            worksheet[cellAddress].t = 'n';
+            worksheet[cellAddress].z = '#,##0 "VND"';
+        }
+    }
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, `Gợi ý ${index + 1}`);
+    XLSX.writeFile(workbook, `Goi_y_AI_${index + 1}.xlsx`);
+  };
+
 
   return (
     <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50">
@@ -32,12 +72,24 @@ const SuggestionOption: React.FC<{
       </ul>
       <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
           <p className="font-semibold">Tổng: <span className="font-mono">{formattedTotalPrice}</span></p>
-          <button
-            onClick={() => onSelect(items)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors"
+          <div className="flex items-center space-x-2">
+            <button
+                onClick={handleExport}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors flex items-center"
+                title="Tải gợi ý này dưới dạng Excel"
             >
-            Chọn
-          </button>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Excel
+            </button>
+            <button
+                onClick={() => onSelect(items)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors"
+                >
+                Chọn
+            </button>
+          </div>
       </div>
     </div>
   )

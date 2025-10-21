@@ -60,7 +60,7 @@ const App: React.FC = () => {
       if (isSelected) {
         return prev.filter(selected => selected.id !== item.id);
       } else {
-        return [...prev, item];
+        return [...prev, { ...item, quantity: 1 }];
       }
     });
   }, []);
@@ -69,16 +69,31 @@ const App: React.FC = () => {
     setSelectedItems(prev => prev.filter(selected => selected.id !== item.id));
   }, []);
 
+  const handleUpdateQuantity = useCallback((itemToUpdate: MenuItem, newQuantity: number) => {
+    setSelectedItems(prev => {
+        if (newQuantity <= 0) {
+            return prev.filter(item => item.id !== itemToUpdate.id);
+        }
+        return prev.map(item => 
+            item.id === itemToUpdate.id 
+                ? { ...item, quantity: newQuantity } 
+                : item
+        );
+    });
+  }, []);
+
+
   const handleClearOrder = useCallback(() => {
     setSelectedItems([]);
   }, []);
   
   const handleSuggestion = useCallback((suggested: MenuItem[]) => {
-    setSelectedItems(suggested);
+    const suggestedWithQuantity = suggested.map(item => ({...item, quantity: 1}));
+    setSelectedItems(suggestedWithQuantity);
   }, []);
   
   const totalPrice = useMemo(() => {
-    return selectedItems.reduce((total, item) => total + item.price, 0);
+    return selectedItems.reduce((total, item) => total + (item.price * (item.quantity || 1)), 0);
   }, [selectedItems]);
 
   const categories = useMemo(() => ['all', ...Array.from(new Set(menuItems.map(item => item.category)))], [menuItems]);
@@ -135,6 +150,7 @@ const App: React.FC = () => {
                       totalPrice={totalPrice} 
                       onClearOrder={handleClearOrder}
                       onRemoveItem={handleRemoveItem}
+                      onUpdateQuantity={handleUpdateQuantity}
                       categories={categories}
                       selectedCategory={selectedCategory}
                       onSelectCategory={handleSelectCategory}

@@ -9,6 +9,7 @@ interface OrderSummaryProps {
   totalPrice: number;
   onClearOrder: () => void;
   onRemoveItem: (item: MenuItem) => void;
+  onUpdateQuantity: (item: MenuItem, newQuantity: number) => void;
   categories: string[];
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
@@ -21,6 +22,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     totalPrice, 
     onClearOrder, 
     onRemoveItem,
+    onUpdateQuantity,
     categories,
     selectedCategory,
     onSelectCategory,
@@ -41,13 +43,17 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         const dataToExport = selectedItems.map(item => ({
           'Tên Món': item.name,
           'Loại': item.category,
-          'Giá': item.price,
+          'Số lượng': item.quantity || 1,
+          'Đơn giá': item.price,
+          'Thành tiền': item.price * (item.quantity || 1),
         }));
 
         dataToExport.push({
           'Tên Món': '',
-          'Loại': 'Tổng cộng',
-          'Giá': totalPrice,
+          'Loại': '',
+          'Số lượng': '',
+          'Đơn giá': 'Tổng cộng',
+          'Thành tiền': totalPrice,
         });
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -55,17 +61,31 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         worksheet['!cols'] = [
           { wch: 40 }, // Tên Món
           { wch: 20 }, // Loại
-          { wch: 15 }, // Giá
+          { wch: 10 }, // Số lượng
+          { wch: 15 }, // Đơn giá
+          { wch: 15 }, // Thành tiền
         ];
         
-        const priceColumnIndex = 'C';
-        for (let i = 2; i <= selectedItems.length + 2; i++) {
-            const cellAddress = `${priceColumnIndex}${i}`;
-            if (worksheet[cellAddress] && worksheet[cellAddress].v !== undefined) {
-                worksheet[cellAddress].t = 'n';
-                worksheet[cellAddress].z = '#,##0 "VND"';
+        const unitPriceCol = 'D';
+        const subtotalCol = 'E';
+
+        for (let i = 2; i <= selectedItems.length + 1; i++) {
+            const unitPriceCellAddress = `${unitPriceCol}${i}`;
+            if (worksheet[unitPriceCellAddress] && worksheet[unitPriceCellAddress].v !== undefined) {
+                worksheet[unitPriceCellAddress].t = 'n';
+                worksheet[unitPriceCellAddress].z = '#,##0 "VND"';
+            }
+            const subtotalCellAddress = `${subtotalCol}${i}`;
+            if (worksheet[subtotalCellAddress] && worksheet[subtotalCellAddress].v !== undefined) {
+                worksheet[subtotalCellAddress].t = 'n';
+                worksheet[subtotalCellAddress].z = '#,##0 "VND"';
             }
         }
+         const totalCellAddress = `${subtotalCol}${selectedItems.length + 2}`;
+         if(worksheet[totalCellAddress]) {
+            worksheet[totalCellAddress].t = 'n';
+            worksheet[totalCellAddress].z = '#,##0 "VND"';
+         }
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Đơn hàng');
@@ -134,7 +154,22 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                         <div key={item.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-700/50 p-2 rounded-md">
                             <span className="text-gray-700 dark:text-gray-300 pr-2 flex-1 truncate" title={item.name}>{item.name}</span>
                             <div className="flex items-center space-x-2 flex-shrink-0">
-                                <span className="font-mono text-sm text-gray-800 dark:text-gray-200">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price)}</span>
+                                <button 
+                                    onClick={() => onUpdateQuantity(item, (item.quantity || 1) - 1)}
+                                    className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 flex items-center justify-center font-bold text-lg transition-colors"
+                                    aria-label={`Giảm số lượng ${item.name}`}
+                                >-</button>
+                                <span className="font-mono text-sm w-6 text-center">{item.quantity || 1}</span>
+                                <button 
+                                    onClick={() => onUpdateQuantity(item, (item.quantity || 1) + 1)}
+                                    className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 flex items-center justify-center font-bold text-lg transition-colors"
+                                    aria-label={`Tăng số lượng ${item.name}`}
+                                >+</button>
+                                
+                                <span className="font-mono text-sm text-gray-800 dark:text-gray-200 w-24 text-right">
+                                    {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price * (item.quantity || 1))}
+                                </span>
+
                                 <button 
                                     onClick={() => onRemoveItem(item)} 
                                     className="text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors rounded-full hover:bg-red-100 dark:hover:bg-gray-600 p-1"
@@ -155,7 +190,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">Chi phí mỗi khách</h3>
                     <div className="flex items-center justify-between">
                         <div className="flex flex-wrap gap-2">
-                            {[6, 8, 10].map(guests => (
+                            {[6].map(guests => (
                                <button 
                                     key={guests} 
                                     onClick={() => setNumberOfGuests(guests === numberOfGuests ? null : guests)}
