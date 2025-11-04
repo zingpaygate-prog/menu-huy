@@ -13,17 +13,26 @@ export const suggestMeal = async (menu: MenuItem[], prompt: string): Promise<str
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const fullPrompt = `
-    Dựa trên thực đơn sau được cung cấp dưới dạng đối tượng JSON, vui lòng đề xuất 3 lựa chọn bữa ăn riêng biệt theo yêu cầu của người dùng (Yêu cầu bằng tiếng Việt).
-    Mỗi lựa chọn nên là một sự kết hợp hợp lý các món ăn.
+    Dựa trên thực đơn sau (đối tượng JSON) và yêu cầu của người dùng, vui lòng đề xuất 5 lựa chọn bữa ăn riêng biệt.
+    Yêu cầu của người dùng có thể bao gồm một mức giá đề xuất. Hãy cố gắng tạo các lựa chọn có tổng giá trị gần nhất có thể với mức giá đó.
 
     Yêu cầu của người dùng: "${prompt}"
 
     Thực đơn:
     ${JSON.stringify(menu, null, 2)}
 
-    Vui lòng CHỈ trả lời bằng một mảng JSON chứa chính xác 3 mảng con. Mỗi mảng con đại diện cho một lựa chọn bữa ăn và chứa tên chính xác của các món trong thực đơn được đề xuất.
-    Ví dụ: [["Tên Món A", "Tên Món B"], ["Tên Món C"], ["Tên Món D", "Tên Món E"]].
-    Nếu bạn không thể đưa ra bất kỳ gợi ý nào, hãy trả về một mảng trống: [].
+    Mỗi lựa chọn bữa ăn phải được cấu trúc hợp lý và bao gồm các món từ các danh mục sau (nếu có trong thực đơn và phù hợp với yêu cầu):
+    1.  **Khai vị**: Một món khai vị.
+    2.  **Món chính**: Một hoặc nhiều món chính.
+    3.  **Canh & Cơm (Tùy chọn)**: Có thể bao gồm canh và/hoặc cơm nếu có và phù hợp.
+    4.  **Tráng miệng**: Một món tráng miệng.
+    5.  **Đồ uống**: Một loại đồ uống.
+
+    Hãy ưu tiên chọn các món có thuộc tính 'category' khớp với các loại trên (ví dụ: 'khai vị', 'món chính', 'canh', 'cơm', 'tráng miệng', 'đồ uống'). Nếu danh mục không rõ ràng, hãy dựa vào tên món ăn để phân loại.
+
+    Vui lòng CHỈ trả lời bằng một mảng JSON chứa chính xác 5 mảng con. Mỗi mảng con đại diện cho một lựa chọn bữa ăn và chỉ chứa tên chính xác của các món trong thực đơn được đề xuất.
+    Ví dụ: [["Gỏi cuốn", "Cơm tấm sườn bì chả", "Canh khổ qua", "Chè hạt sen", "Nước suối"], ["..."], ["..."], ["..."], ["..."]].
+    Nếu bạn không thể đưa ra gợi ý nào, hãy trả về một mảng trống: [].
   `;
 
   try {
@@ -74,7 +83,7 @@ export const suggestTeabreak = async (menu: MenuItem[]): Promise<string[][]> => 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const fullPrompt = `
-    Dựa trên thực đơn sau được cung cấp dưới dạng đối tượng JSON, vui lòng đề xuất 3 lựa chọn tiệc trà (teabreak) riêng biệt.
+    Dựa trên thực đơn sau được cung cấp dưới dạng đối tượng JSON, vui lòng đề xuất 5 lựa chọn tiệc trà (teabreak) riêng biệt.
 
     Yêu cầu cấu trúc cho mỗi suất tiệc trà:
     - 2 món bánh (tìm trong danh mục 'bánh', 'tráng miệng', hoặc tương tự)
@@ -89,8 +98,8 @@ export const suggestTeabreak = async (menu: MenuItem[]): Promise<string[][]> => 
     Thực đơn:
     ${JSON.stringify(menu, null, 2)}
 
-    Vui lòng CHỈ trả lời bằng một mảng JSON chứa chính xác 3 mảng con. Mỗi mảng con đại diện cho một lựa chọn tiệc trà và chứa tên chính xác của các món trong thực đơn được đề xuất.
-    Ví dụ: [["Bánh Tiramisu", "Bánh Mousse Chanh Dây", "Panna Cotta Dâu", "Dưa Hấu", "Nước Cam", "Trà Lipton", "Cà Phê Đen"], ["Bánh...", "Bánh..."], ["Bánh...", "Bánh..."]].
+    Vui lòng CHỈ trả lời bằng một mảng JSON chứa chính xác 5 mảng con. Mỗi mảng con đại diện cho một lựa chọn tiệc trà và chứa tên chính xác của các món trong thực đơn được đề xuất.
+    Ví dụ: [["Bánh Tiramisu", "Bánh Mousse Chanh Dây", "Panna Cotta Dâu", "Dưa Hấu", "Nước Cam", "Trà Lipton", "Cà Phê Đen"], ["..."], ["..."], ["..."], ["..."]].
     Nếu bạn không thể đưa ra bất kỳ gợi ý nào, hãy trả về một mảng trống: [].
   `;
 

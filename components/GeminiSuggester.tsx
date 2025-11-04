@@ -155,6 +155,89 @@ export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSugges
     onSuggestion(items);
     setSuggestions(null);
   }
+  
+  const handleExportAll = () => {
+    if (!suggestions || suggestions.length === 0 || typeof XLSX === 'undefined') return;
+
+    const allDataToExport: any[] = [];
+    
+    suggestions.forEach((option, index) => {
+      const validItems = option
+        .map(name => menu.find(item => item.name.toLowerCase() === name.toLowerCase()))
+        .filter((item): item is MenuItem => !!item);
+      
+      if (validItems.length === 0) return; 
+
+      const totalPrice = validItems.reduce((sum, item) => sum + item.price, 0);
+
+      // Add a header for the suggestion
+      allDataToExport.push({
+          'Gợi ý': `Lựa chọn ${index + 1}`,
+          'Tên Món': '',
+          'Loại': '',
+          'Đơn giá': ''
+      });
+
+      // Add items for the current suggestion
+      validItems.forEach(item => {
+          allDataToExport.push({
+              'Gợi ý': '',
+              'Tên Món': item.name,
+              'Loại': item.category,
+              'Đơn giá': item.price
+          });
+      });
+
+      // Add a total row for the suggestion
+      allDataToExport.push({
+          'Gợi ý': '',
+          'Tên Món': 'Tổng cộng',
+          'Loại': '',
+          'Đơn giá': totalPrice
+      });
+
+      // Add a separator row (if it's not the last suggestion)
+      if (index < suggestions.length - 1) {
+          allDataToExport.push({}); // Empty object for a blank row
+      }
+    });
+    
+    if (allDataToExport.length === 0) {
+        setError("Không có gợi ý hợp lệ nào để xuất.");
+        return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(allDataToExport, {
+        header: ['Gợi ý', 'Tên Món', 'Loại', 'Đơn giá'] // Ensure column order
+    });
+
+    worksheet['!cols'] = [
+      { wch: 20 }, // Gợi ý
+      { wch: 40 }, // Tên Món
+      { wch: 20 }, // Loại
+      { wch: 15 }, // Đơn giá
+    ];
+    
+    // Formatting the price column
+    const priceCol = 'D';
+    for (let i = 0; i < allDataToExport.length; i++) {
+        const rowData = allDataToExport[i];
+        if (typeof rowData['Đơn giá'] === 'number') {
+            const cellAddress = `${priceCol}${i + 2}`; // +1 for header, +1 for 1-based index
+            // The cell might not exist if the whole row is empty, so we check
+            if (worksheet[cellAddress]) {
+                worksheet[cellAddress].t = 'n';
+                worksheet[cellAddress].z = '#,##0 "VND"';
+            }
+        }
+    }
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, `Tất cả gợi ý`);
+    
+    XLSX.writeFile(workbook, 'Tat_ca_goi_y_AI.xlsx');
+  };
+
 
   const hasApiKey = !!process.env.API_KEY;
 
@@ -176,7 +259,7 @@ export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSugges
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="ví dụ: 'bữa trưa nhẹ cho hai người' hoặc 'món gì đó cay và ăn chay'"
+          placeholder="ví dụ: 'bữa trưa cho một người khoảng 150,000 VND' hoặc 'bữa tối thịnh soạn ít cay'"
           className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
           rows={3}
           disabled={isLoading || isTeabreakLoading}
@@ -231,6 +314,17 @@ export const GeminiSuggester: React.FC<GeminiSuggesterProps> = ({ menu, onSugges
                         index={index}
                     />
                 ))}
+                <div className="pt-4 text-center">
+                    <button
+                        onClick={handleExportAll}
+                        className="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center shadow-md mx-auto"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Tải xuống tất cả gợi ý (Excel)
+                    </button>
+                </div>
             </div>
         )}
 
