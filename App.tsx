@@ -9,12 +9,15 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { MenuExporter } from './components/MenuExporter';
 
+declare const XLSX: any;
+
 const App: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<MenuItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isLoadingPremade, setIsLoadingPremade] = useState(false);
 
   const handleFileUploaded = useCallback((data: any[]) => {
     setError(null);
@@ -53,6 +56,44 @@ const App: React.FC = () => {
       setMenuItems([]);
     }
   }, []);
+
+  const handleLoadPremadeMenu = useCallback(async () => {
+    if (typeof XLSX === 'undefined') {
+      setError("Thư viện phân tích tệp (SheetJS) chưa được tải. Vui lòng kiểm tra kết nối internet của bạn và thử lại.");
+      return;
+    }
+    
+    setIsLoadingPremade(true);
+    setError(null);
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1GwpW98wxHE8UcqNjKyZHkN7hyx52BTc0A2RlGU_NZfY/gviz/tq?tqx=out:csv';
+
+    try {
+      const response = await fetch(sheetUrl);
+      if (!response.ok) {
+        throw new Error(`Không thể tải menu có sẵn. Trạng thái: ${response.status}`);
+      }
+      const csvText = await response.text();
+      // Google Sheets CSV export can include a UTF-8 BOM which can trip up parsers.
+      const cleanCsvText = csvText.startsWith('\ufeff') ? csvText.substring(1) : csvText;
+
+      const workbook = XLSX.read(cleanCsvText, { type: 'string' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      handleFileUploaded(jsonData);
+
+    } catch (e) {
+      console.error("Error loading pre-made menu:", e);
+      if (e instanceof Error) {
+        setError(`Lỗi tải menu có sẵn: ${e.message}`);
+      } else {
+        setError('Đã xảy ra lỗi không xác định khi tải menu có sẵn.');
+      }
+    } finally {
+      setIsLoadingPremade(false);
+    }
+  }, [handleFileUploaded]);
 
   const handleSelectItem = useCallback((item: MenuItem) => {
     setSelectedItems(prev => {
@@ -137,9 +178,28 @@ const App: React.FC = () => {
           <div className="text-center py-20 px-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
             <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Chào mừng đến với Trình lập kế hoạch thực đơn AI</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
-             Bắt đầu bằng cách tải lên thực đơn của bạn ở định dạng Excel (.xlsx) hoặc CSV (.csv). Vui lòng đảm bảo tệp của bạn có các cột như 'Tên Món', 'Giá' và 'Loại'.
+             Bắt đầu bằng cách tải lên thực đơn của bạn ở định dạng Excel (.xlsx) hoặc CSV (.csv), hoặc sử dụng menu có sẵn của chúng tôi.
             </p>
-            <FileUploader onFileUploaded={handleFileUploaded} onError={setError} />
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <FileUploader onFileUploaded={handleFileUploaded} onError={setError} />
+                <button
+                    onClick={handleLoadPremadeMenu}
+                    disabled={isLoadingPremade}
+                    className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-300 shadow-md disabled:bg-teal-400 disabled:cursor-wait flex items-center justify-center"
+                >
+                    {isLoadingPremade ? (
+                        <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Đang tải...
+                        </>
+                    ) : (
+                        'Dùng Menu có sẵn'
+                    )}
+                </button>
+            </div>
           </div>
         ) : (
           <>
