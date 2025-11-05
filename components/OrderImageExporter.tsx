@@ -44,7 +44,7 @@ export const OrderImageExporter: React.FC<OrderImageExporterProps> = ({ selected
 
     // 3. Draw Title
     ctx.font = titleFont;
-    ctx.fillText("Thực Đơn Gợi Ý", canvas.width / 2, currentY);
+    ctx.fillText("Menu Tiệc", canvas.width / 2, currentY);
     currentY += titleSpacing;
 
     // 4. Draw selected items
@@ -90,7 +90,7 @@ export const OrderImageExporter: React.FC<OrderImageExporterProps> = ({ selected
     
     // 7. Trigger download
     const link = document.createElement('a');
-    link.download = 'Menu_Goi_Y.png';
+    link.download = 'Menu_Tiec.png';
     link.href = canvas.toDataURL('image/png');
     document.body.appendChild(link);
     link.click();

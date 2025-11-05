@@ -176,7 +176,7 @@ const App: React.FC = () => {
 
         {menuItems.length === 0 ? (
           <div className="text-center py-20 px-6 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Chào mừng đến với Trình lập kế hoạch thực đơn AI</h2>
+            <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Chào mừng đến với Menu Tiệc</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-2xl mx-auto">
              Bắt đầu bằng cách tải lên thực đơn của bạn ở định dạng Excel (.xlsx) hoặc CSV (.csv), hoặc sử dụng menu có sẵn của chúng tôi.
             </p>
@@ -216,6 +216,7 @@ const App: React.FC = () => {
                       onSelectCategory={handleSelectCategory}
                       searchQuery={searchQuery}
                       onSearchChange={handleSearchChange}
+                      menuItems={menuItems}
                     />
                 </div>
                 <div>

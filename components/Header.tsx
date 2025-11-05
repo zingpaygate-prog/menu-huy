@@ -9,7 +9,7 @@ export const Header: React.FC = () => {
                         <path d="M16 6V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H2v13c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6h-6zm-6-2h4v2h-4V4zM4 8h16v11H4V8zm3 2v6h2v-6H7zm4 0v6h2v-6h-2zm4 0v6h2v-6h-2z"/>
                     </svg>
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
-                        Trình lập kế hoạch thực đơn AI
+                        Menu Tiệc
                     </h1>
                 </div>
             </div>

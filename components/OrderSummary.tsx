@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MenuItem } from '../types';
 import { OrderImageExporter } from './OrderImageExporter';
 
@@ -15,6 +15,7 @@ interface OrderSummaryProps {
   onSelectCategory: (category: string) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  menuItems: MenuItem[];
 }
 
 export const OrderSummary: React.FC<OrderSummaryProps> = ({ 
@@ -27,20 +28,57 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     selectedCategory,
     onSelectCategory,
     searchQuery,
-    onSearchChange 
+    onSearchChange,
+    menuItems
 }) => {
     const [numberOfGuests, setNumberOfGuests] = useState<number | null>(null);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const suggestionsContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (selectedItems.length === 0) {
             setNumberOfGuests(null);
         }
     }, [selectedItems]);
+
+    const searchSuggestions = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return [];
+        }
+        return menuItems
+            .filter(item => 
+                item.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                item.name.toLowerCase() !== searchQuery.toLowerCase()
+            )
+            .slice(0, 5); // Limit to 5 suggestions
+    }, [searchQuery, menuItems]);
+
+    const handleSuggestionClick = (item: MenuItem) => {
+        onSearchChange(item.name); 
+        setShowSuggestions(false);
+    };
+    
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (suggestionsContainerRef.current && !suggestionsContainerRef.current.contains(event.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        if (showSuggestions) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSuggestions]);
     
     const handleExport = () => {
         if (selectedItems.length === 0 || typeof XLSX === 'undefined') return;
 
-        const dataToExport = selectedItems.map(item => ({
+        // FIX: Explicitly type `dataToExport` as `any[]` to allow for a summary row with different data types, resolving type errors on lines 91 and 92.
+        const dataToExport: any[] = selectedItems.map(item => ({
           'Tên Món': item.name,
           'Loại': item.category,
           'Số lượng': item.quantity || 1,
@@ -109,7 +147,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
             {/* Search and Filter Section */}
             <div className="pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
                 <div className="space-y-4">
-                    <div className="relative">
+                    <div className="relative" ref={suggestionsContainerRef}>
                         <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                             <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -120,8 +158,26 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
                             placeholder="Tìm kiếm món ăn..."
                             value={searchQuery}
                             onChange={(e) => onSearchChange(e.target.value)}
+                            onFocus={() => setShowSuggestions(true)}
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-full bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
                         />
+                        {showSuggestions && searchSuggestions.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <ul>
+                                    {searchSuggestions.map(item => (
+                                        <li 
+                                            key={item.id}
+                                            onClick={() => handleSuggestionClick(item)}
+                                            className="px-4 py-3 cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors duration-150"
+                                            role="option"
+                                            aria-selected="false"
+                                        >
+                                            <span className="text-gray-800 dark:text-gray-200">{item.name}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                     {categories.length > 2 && (
                         <div className="flex flex-wrap gap-2">
